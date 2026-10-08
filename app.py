@@ -7,6 +7,8 @@ from routes.maintenance import maintenance_bp
 
 app = Flask(__name__)
 
+app.config["DATABASE_PATH"] = "data/motomate.db"
+
 initialize_database()
 
 app.register_blueprint(motorcycle_bp)

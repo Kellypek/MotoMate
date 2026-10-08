@@ -1,14 +1,25 @@
 import sqlite3
 from pathlib import Path
 
+from flask import current_app, has_app_context
+
 
 DATABASE_PATH = Path("data/motomate.db")
 
 
-def get_connection():
-    DATABASE_PATH.parent.mkdir(exist_ok=True)
+def get_database_path():
+    if has_app_context():
+        return Path(current_app.config["DATABASE_PATH"])
 
-    connection = sqlite3.connect(DATABASE_PATH)
+    return DATABASE_PATH
+
+
+def get_connection():
+    database_path = get_database_path()
+
+    database_path.parent.mkdir(exist_ok=True)
+
+    connection = sqlite3.connect(database_path)
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys = ON")
 
@@ -16,6 +27,10 @@ def get_connection():
 
 
 def initialize_database():
+    database_path = get_database_path()
+
+    database_path.parent.mkdir(exist_ok=True)
+
     connection = get_connection()
 
     connection.execute("""
