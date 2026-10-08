@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from database import get_connection
+from services.maintenance_service import calculate_service_status
 
 
 maintenance_bp = Blueprint("maintenance", __name__)
@@ -255,6 +256,77 @@ def delete_maintenance(maintenance_id):
         return jsonify({
             "error": str(error)
         }), 400
+
+    finally:
+        connection.close()
+
+@maintenance_bp.get("/motorcycles/<int:motorcycle_id>/status")
+def get_motorcycle_status(motorcycle_id):
+    connection = get_connection()
+
+    try:
+        motorcycle = connection.execute("""
+            SELECT
+                id,
+                brand,
+                model,
+                registration_number,
+                current_mileage
+            FROM motorcycles
+            WHERE id = ?
+        """, (motorcycle_id,)).fetchone()
+
+        if motorcycle is None:
+            return jsonify({
+                "error": "Motorcycle not found."
+            }), 404
+
+        records = connection.execute("""
+            SELECT
+                id,
+                service_type,
+                service_date,
+                service_mileage,
+                interval_km,
+                cost,
+                notes
+            FROM maintenance_records
+            WHERE motorcycle_id = ?
+            ORDER BY service_date DESC, id DESC
+        """, (motorcycle_id,)).fetchall()
+
+        maintenance_status = []
+
+        for record in records:
+            service_status = calculate_service_status(
+                motorcycle["current_mileage"],
+                record["service_mileage"],
+                record["interval_km"]
+            )
+
+            maintenance_status.append({
+                "id": record["id"],
+                "service_type": record["service_type"],
+                "service_date": record["service_date"],
+                "service_mileage": record["service_mileage"],
+                "interval_km": record["interval_km"],
+                "next_service": service_status["next_service"],
+                "remaining_km": service_status["remaining_km"],
+                "status": service_status["status"],
+                "cost": record["cost"],
+                "notes": record["notes"]
+            })
+
+        return jsonify({
+            "motorcycle": {
+                "id": motorcycle["id"],
+                "brand": motorcycle["brand"],
+                "model": motorcycle["model"],
+                "registration_number": motorcycle["registration_number"],
+                "current_mileage": motorcycle["current_mileage"]
+            },
+            "maintenance": maintenance_status
+        })
 
     finally:
         connection.close()
