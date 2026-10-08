@@ -10,6 +10,15 @@ VENV_DIR = PROJECT_ROOT / ".venv"
 REQUIREMENTS_FILE = PROJECT_ROOT / "requirements.txt"
 DATA_DIR = PROJECT_ROOT / "data"
 
+def check_python_version():
+    if sys.version_info < (3, 12):
+        print("Python 3.12 or higher is required.")
+        sys.exit(1)
+
+    print(
+        f"Python version {sys.version_info.major}."
+        f"{sys.version_info.minor} detected."
+    )
 
 def create_virtual_environment():
     if VENV_DIR.exists():
@@ -79,6 +88,7 @@ def main():
     print("       MotoMate IaC Setup")
     print("===================================")
 
+    check_python_version()
     create_virtual_environment()
     install_dependencies()
     create_data_directory()
