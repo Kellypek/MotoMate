@@ -65,17 +65,47 @@ def check_python_version():
     print(f"Python {sys.version.split()[0]} detected.")
 
 
-def install_nodejs_with_winget():
-    """
-    Attempt to install Node.js LTS on Windows using winget.
+def refresh_node_path():
+    """Find an existing Node.js installation and refresh PATH."""
+    candidates = [
+        Path(os.environ.get("ProgramFiles", r"C:\Program Files"))
+        / "nodejs",
+        Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"))
+        / "nodejs",
+        Path(os.environ.get("LOCALAPPDATA", ""))
+        / "Programs" / "nodejs",
+    ]
 
-    If winget is unavailable or installation fails, provide
-    instructions for manual installation.
-    """
+    for directory in candidates:
+        node_exe = directory / "node.exe"
+        npm_cmd = directory / "npm.cmd"
+
+        if node_exe.is_file() and npm_cmd.is_file():
+            current_paths = os.environ.get("PATH", "").split(os.pathsep)
+
+            # Avoid adding the same directory repeatedly.
+            if str(directory) not in current_paths:
+                os.environ["PATH"] = (
+                    str(directory) + os.pathsep
+                    + os.environ.get("PATH", "")
+                )
+
+            return shutil.which("node"), shutil.which("npm")
+
+    return shutil.which("node"), shutil.which("npm")
+
+
+def install_nodejs_with_winget():
+    """Reuse an existing Node.js installation or install Node.js LTS."""
+    node, npm = refresh_node_path()
+
+    if node and npm:
+        print("Existing Node.js and npm detected; reusing them.")
+        return
+
     if os.name != "nt":
         raise RuntimeError(
-            "Node.js and npm are missing. Automatic installation "
-            "is configured for Windows only. Install Node.js LTS "
+            "Node.js and npm are missing. Install Node.js LTS "
             "for your operating system and rerun setup.py."
         )
 
@@ -83,58 +113,35 @@ def install_nodejs_with_winget():
 
     if not winget:
         raise RuntimeError(
-            "Node.js and npm are missing, and winget is unavailable.\n"
+            "Node.js/npm are missing and winget is unavailable. "
             "Install Node.js LTS from https://nodejs.org/ "
-            "and reopen the terminal before rerunning setup.py."
+            "and reopen the terminal."
         )
 
-    print("\nNode.js/npm not found.")
-    print("Attempting to install Node.js LTS using winget...")
+    print("Node.js/npm not found; attempting Node.js LTS installation.")
 
-    try:
-        run_command([
-            winget,
-            "install",
-            "--id", "OpenJS.NodeJS.LTS",
-            "--exact",
-            "--accept-source-agreements",
-            "--accept-package-agreements",
-        ])
-    except (subprocess.CalledProcessError, OSError) as error:
-        raise RuntimeError(
-            "Automatic Node.js installation failed.\n"
-            "Check your network connection and Windows permissions, "
-            "or install Node.js LTS from https://nodejs.org/ "
-            "then rerun setup.py."
-        ) from error
+    result = subprocess.run([
+        winget,
+        "install",
+        "--id", "OpenJS.NodeJS.LTS",
+        "--exact",
+        "--accept-source-agreements",
+        "--accept-package-agreements",
+    ], check=False)
 
-    # Refresh PATH for the current Python process when Node.js
-    # was installed in the standard Windows installation directory.
-    program_files = os.environ.get(
-        "ProgramFiles",
-        r"C:\Program Files",
+    # Check again even if winget returned a non-zero exit code.
+    node, npm = refresh_node_path()
+
+    if node and npm:
+        print("Node.js and npm are available.")
+        return
+
+    raise RuntimeError(
+        "Node.js/npm are still unavailable after the installation attempt "
+        f"(winget exit code: {result.returncode}). "
+        "Install or repair Node.js LTS, then open a new PowerShell "
+        "window and rerun setup.py."
     )
-    nodejs_dir = Path(program_files) / "nodejs"
-
-    if nodejs_dir.is_dir():
-        os.environ["PATH"] = (
-            str(nodejs_dir)
-            + os.pathsep
-            + os.environ.get("PATH", "")
-        )
-
-    # winget may update the system PATH without updating the
-    # environment of this already-running Python process.
-    if not shutil.which("node") or not shutil.which("npm"):
-        raise RuntimeError(
-            "Node.js installation was attempted, but node/npm are "
-            "not available in the current process yet.\n"
-            "Close and reopen your terminal, then rerun:\n"
-            "python setup.py"
-        )
-
-    print("Node.js LTS and npm are available.")
-
 
 def check_node_and_npm():
     """Check Node.js/npm and required frontend project files."""
