@@ -220,3 +220,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# MotoMate local runtime files
+frontend/node_modules/
+frontend/dist/
+logs/
+backend/data/*.db
+data/*.db
+setup.py.backup
