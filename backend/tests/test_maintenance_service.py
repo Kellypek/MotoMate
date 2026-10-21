@@ -8,7 +8,7 @@ def test_service_status_ok():
         interval_km=2000
     )
 
-    assert result["next_service"] == 99999
+    assert result["next_service"] == 21000
     assert result["remaining_km"] == 2000
     assert result["status"] == "OK"
 
