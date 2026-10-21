@@ -136,15 +136,32 @@ This separation improves readability and makes the automation logic easier to ma
 
 ## 6. Testing
 
-MotoMate uses pytest to test backend functionality, including motorcycle management, maintenance records, and maintenance service calculations.
+MotoMate uses `pytest` to test backend functionality, including motorcycle management, maintenance records, and maintenance service calculations. Follow the steps below to prepare the testing environment and run the automated tests.
 
-Run the test suite from the project root directory:
+### 6.1 Install Test Dependencies
 
-```bash
+First, ensure that Python is installed and that you have completed the application setup described in Section 3.
+
+From the project root directory, install the backend dependencies and `pytest`:
+
+```powershell
+python -m pip install -r backend/requirements.txt
+python -m pip install pytest
+```
+
+These commands install the required Python packages into the active Python environment. If you are using a virtual environment, activate it before running the commands.
+
+### 6.2 Run the Automated Tests
+
+From the project root directory, execute:
+
+```powershell
 python -m pytest
 ```
 
-Review the terminal output to determine whether the tests passed. Resolve any failures before considering the test run successful.
+Pytest will discover and execute the available test files. Check the final summary to confirm whether the tests passed or failed. The number of tests may vary depending on the current test suite.
+
+If a test fails, review the error message and resolve the issue before running the tests again.
 
 ### IaC Setup Verification
 
