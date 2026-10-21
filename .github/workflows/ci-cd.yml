@@ -15,7 +15,7 @@ permissions:
 jobs:
   test:
     name: Automated Tests
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
       - name: Checkout repository
@@ -52,7 +52,7 @@ jobs:
 
   deploy:
     name: IaC Deployment
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     needs: test
     if: github.event_name == 'push'
 
